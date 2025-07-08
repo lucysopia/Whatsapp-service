@@ -15,7 +15,7 @@ RUN groupadd -r ai-group && useradd -g ai-group ai-user && \
 
 USER ai-user
 
-RUN chmod u+x start-huey.sh
+RUN chmod +x start-huey.sh
 
 EXPOSE 8000
 CMD ["./start-huey.sh"]

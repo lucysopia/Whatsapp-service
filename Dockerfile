@@ -15,7 +15,7 @@ RUN groupadd -r ai-group && useradd -g ai-group ai-user && \
 
 USER ai-user
 
-RUN chmod u+x start.sh
+RUN chmod +x start.sh
 
 EXPOSE 8000
 CMD ["./start.sh"]
