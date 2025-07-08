@@ -34,6 +34,7 @@ class WhatsAppHandler:
         return self.media_url and "pdf" in (self.media_type or "")
 
     async def handle_pdf(self):
+        print("processing pdf file")
         content = process_pdf_bill(self.media_url)
         self.response.message(f"✅ Bill processed:\n\n{content}")
         return self.response
