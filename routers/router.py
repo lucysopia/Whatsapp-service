@@ -1,0 +1,24 @@
+from fastapi import APIRouter, Form
+from fastapi.responses import PlainTextResponse
+from starlette.responses import Response
+
+from handlers.handler import WhatsAppHandler
+
+twilio_router = APIRouter()
+
+
+@twilio_router.post("/whatsapp")
+async def whatsapp_router(
+    Body: str = Form(""),
+    MediaUrl0: str = Form(None),
+    MediaContentType0: str = Form(None),
+    From: str = Form(None),
+):
+    handler = WhatsAppHandler(
+        user_id=From, message=Body, media_url=MediaUrl0, media_type=MediaContentType0
+    )
+    # Get TwiML string from handler
+    twiml_response = await handler.handle()
+
+    # Ensure the response is a stringified XML (TwiML)
+    return Response(content=str(twiml_response), media_type="application/xml")

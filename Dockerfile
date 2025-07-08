@@ -1,0 +1,18 @@
+FROM python:3.12.4-slim-bullseye
+
+WORKDIR /app
+
+COPY requirements.txt /app
+
+RUN python -m pip install -r requirements.txt
+
+COPY . /app
+
+RUN groupadd -r ai-group && useradd -g ai-group ai-user
+RUN chown -R ai-user:ai-group /app
+USER ai-user
+
+RUN chmod u+x start.sh
+
+EXPOSE 8000:8000
+CMD ["./start.sh"]

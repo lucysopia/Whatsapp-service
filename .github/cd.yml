@@ -1,0 +1,100 @@
+name: Deploy to Amazon ECS
+
+on:
+  workflow_dispatch:
+    branches: [ main, master ]
+
+env:
+  AWS_REGION: eu-central-1                   # set this to your preferred AWS region, e.g. us-west-1
+  ECR_REPOSITORY: ai-bot-repository           # set this to your Amazon ECR repository name
+  ECS_SERVICE: ai-bot-service-prod                 # set this to your Amazon ECS service name
+  ECS_CLUSTER: ai-bot-cluster-prod                 # set this to your Amazon ECS cluster name
+  ECS_TASK_DEFINITION: ai-bot-task-definition-prod # set this to the path to your Amazon ECS task definition
+                                               # file, e.g. .aws/task-definition.json
+  CONTAINER_NAME: ai-bot-app-container           # set this to the name of the container in the
+                                               # containerDefinitions section of your task definition
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get rev-parse --short
+        id: rev-parse-short
+        run: echo "::set-output name=short_sha::$(git rev-parse --short HEAD)"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@0e613a0980cbf65ed5b322eb7a1e075d28913a83
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build & push webserver image AWS ECR
+        id: build-webserver-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
+          IMAGE_TAG: webserver-${{ steps.rev-parse-short.outputs.short_sha }}
+        run: |
+          image=$(aws ecr list-images --repository-name $ECR_REPOSITORY --query "imageIds[?imageTag=='$IMAGE_TAG'].imageTag" --output text)
+          if [[ $image ]]; then
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          else
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          fi
+
+      - name: Build & push Scheduler image AWS ECR
+        id: build-scheduler-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
+          IMAGE_TAG: scheduler-${{ steps.rev-parse-short.outputs.short_sha }}
+        run: |
+          image=$(aws ecr list-images --repository-name $ECR_REPOSITORY --query "imageIds[?imageTag=='$IMAGE_TAG'].imageTag" --output text)
+          if [[ $image ]]; then
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          else
+          docker build -f Dockerfile_scheduler -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          fi
+
+      - name: Download cluster task definition
+        run: |
+          aws ecs describe-task-definition --task-definition airflow-task-definition-prod --query taskDefinition > task-definition.json
+
+      - name: Update Webserver container image
+        id: update-webserver-container
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: airflow-app-container
+          image: ${{ steps.build-webserver-image.outputs.image }}
+
+      - name: Update Scheduler container image
+        id: update-scheduler-container
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ steps.update-webserver-container.outputs.task-definition }}
+          container-name: airflow-scheduler-container
+          image: ${{ steps.build-scheduler-image.outputs.image }}
+
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2.2.0
+        with:
+          task-definition: ${{ steps.update-scheduler-container.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+#          wait-for-service-stability: true
