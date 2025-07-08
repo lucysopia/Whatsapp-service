@@ -4,7 +4,6 @@ from database.database import get_session, save_session
 from handlers.vehicle_service_handler import VehicleServiceHandler
 from settings import logger
 from utils.pdf_bill_handler import process_pdf_bill
-from utils.text_handler_utils import handle_text_command
 
 
 class WhatsAppHandler:

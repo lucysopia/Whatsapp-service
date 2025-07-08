@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Form
-from fastapi.responses import PlainTextResponse
 from starlette.responses import Response
 
 from handlers.handler import WhatsAppHandler
