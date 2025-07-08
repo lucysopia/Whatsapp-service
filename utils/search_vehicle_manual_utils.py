@@ -2,10 +2,10 @@ import json
 import os
 
 import numpy as np
-from sentence_transformers import SentenceTransformer
+# from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
+# model = SentenceTransformer("all-MiniLM-L6-v2")
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 
@@ -24,7 +24,7 @@ def get_encoded_pdf_manuals() -> list:
 
 def search_manual(query, model_name, top_k=3) -> list:
     data = get_encoded_pdf_manuals()
-    query_vec = model.encode(query)
+    query_vec = [1, 2, 3, 4, 5]  # model.encode(query)
     similarities = []
 
     for entry in data:

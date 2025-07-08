@@ -6,10 +6,10 @@ import re
 import pymupdf
 
 import json
-from sentence_transformers import SentenceTransformer
+# from sentence_transformers import SentenceTransformer
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
-
+# model = SentenceTransformer("all-MiniLM-L6-v2")
+model = None
 
 def clean_text(text):
     text = re.sub(r"\n+", "\n", text)
