@@ -21,4 +21,4 @@ async def whatsapp_router(
     twiml_response = await handler.handle()
     print(twiml_response)
     # Ensure the response is a stringified XML (TwiML)
-    return Response(content=str(twiml_response), media_type="application/xml")
+    return Response(content=twiml_response.to_xml(), media_type="application/xml")
