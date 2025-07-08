@@ -66,7 +66,7 @@ jobs:
           if [[ $image ]]; then
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
           else
-          docker build -f Dockerfile_scheduler -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker build -f Dockerfile_huey -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
           fi
@@ -80,7 +80,7 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-definition.json
-          container-name: airflow-app-container
+          container-name: ai-bot-app-container
           image: ${{ steps.build-webserver-image.outputs.image }}
 
       - name: Update Scheduler container image
@@ -88,7 +88,7 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: ${{ steps.update-webserver-container.outputs.task-definition }}
-          container-name: airflow-scheduler-container
+          container-name: ai-bot-scheduler-container
           image: ${{ steps.build-scheduler-image.outputs.image }}
 
       - name: Deploy Amazon ECS task definition
