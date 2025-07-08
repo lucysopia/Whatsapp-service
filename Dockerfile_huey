@@ -4,16 +4,19 @@ WORKDIR /app
 
 COPY requirements.txt /app
 
-RUN python -m pip install --upgrade pip
-RUN python -m pip install -r requirements.txt
+# Install pip, torch (CPU), then other deps
+RUN python -m pip install --upgrade pip && \
+    pip install --no-cache-dir torch==2.7.1+cpu -f https://download.pytorch.org/whl/torch_stable.html && \
+    pip install --no-cache-dir -r requirements.txt
 
 COPY . /app
 
-RUN groupadd -r ai-group && useradd -g ai-group ai-user
-RUN chown -R ai-user:ai-group /app
+RUN groupadd -r ai-group && useradd -g ai-group ai-user && \
+    chown -R ai-user:ai-group /app
+
 USER ai-user
 
 RUN chmod u+x start-huey.sh
 
-EXPOSE 8000:8000
+EXPOSE 8000
 CMD ["./start-huey.sh"]
