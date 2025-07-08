@@ -13,11 +13,12 @@ async def whatsapp_router(
     MediaContentType0: str = Form(None),
     From: str = Form(None),
 ):
+    print(Body,From)
     handler = WhatsAppHandler(
         user_id=From, message=Body, media_url=MediaUrl0, media_type=MediaContentType0
     )
     # Get TwiML string from handler
     twiml_response = await handler.handle()
-
+    print(twiml_response)
     # Ensure the response is a stringified XML (TwiML)
     return Response(content=str(twiml_response), media_type="application/xml")
