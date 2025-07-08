@@ -73,7 +73,7 @@ jobs:
 
       - name: Download cluster task definition
         run: |
-          aws ecs describe-task-definition --task-definition airflow-task-definition-prod --query taskDefinition > task-definition.json
+          aws ecs describe-task-definition --task-definition ai-bot-task-definition-prod --query taskDefinition > task-definition.json
 
       - name: Update Webserver container image
         id: update-webserver-container
