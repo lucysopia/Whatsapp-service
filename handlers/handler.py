@@ -8,7 +8,7 @@ from utils.pdf_bill_handler import process_pdf_bill
 
 class WhatsAppHandler:
     def __init__(
-            self, user_id: str, message: str, media_url: str = None, media_type: str = None
+        self, user_id: str, message: str, media_url: str = None, media_type: str = None
     ):
         self.user_id = user_id
         self.message = message.strip()
@@ -39,7 +39,7 @@ class WhatsAppHandler:
         self.response.message(f"✅ Bill processed:\n\n{content}")
         return self.response
 
-    def handle_text(self, action: str) -> str:
+    def handle_text(self, action: str) -> MessagingResponse:
         text = self.message.lower()
         commands = {
             "help": self._help,
@@ -70,13 +70,11 @@ class WhatsAppHandler:
                 else (self.response.message(results))
             )
             logger.info(text, result)
-        return result
+        return self.response
 
     def handle_fallback(self, message):
-        self.response.message(
-            "❓ I didn’t understand that. Please type 'help' to see what I can assist with."
-        )
-        return self.response
+        message = "❓ I didn’t understand that. Please type 'help' to see what I can assist with."
+        return message
 
     @staticmethod
     def _help(message) -> str:
