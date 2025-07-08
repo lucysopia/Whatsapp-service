@@ -1,9 +1,10 @@
 # This script processes various bus manuals in PDF format, extracting text, cleaning it,
 # chunking it by headers, and generating embeddings for each chunk using a pre-trained model.
-
+import os
 # PyMuPDF
 import re
-import fitz
+import pymupdf
+
 import json
 from sentence_transformers import SentenceTransformer
 
@@ -43,7 +44,7 @@ def chunk_text_by_headers(text):
 
 
 def preprocess_pdf(filepath):
-    doc = fitz.open(filepath)
+    doc = pymupdf.open(filepath)  # or open_pdf(filepath)
     chunks = []
 
     for i, page in enumerate(doc):
@@ -55,9 +56,7 @@ def preprocess_pdf(filepath):
             text = content.strip()
             if text:
                 embedding = model.encode(text).tolist()
-                bus_model = filepath.split("_")[
-                    0
-                ]  # Extracts "Zhongtong", "BYD-K6", etc.
+                bus_model = filepath.split("_")[0]
                 chunks.append(
                     {
                         "page": i + 1,
@@ -78,13 +77,14 @@ def save_to_json(data, filename="manual_chunks.json"):
 
 
 if __name__ == "__main__":
+    path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))+"/static"
     pdf_paths = [
-        "BYD-K6_All_Systems_Service _Manual.pdf",
-        "Zhongtong_Motor_User_Manual.pdf",
-        "Kinglong_Air _Brake _System_Service_Manual.pdf",
-        "Joylong_User_Manual.pdf",
-        # "Higer_All_parts_User_Manual.pdf",
-        "BLK-E9_Air_Suspension_Maintenance_Manual.pdf",
+        f"{path}/BYD-K6_All_Systems_Service _Manual.pdf",
+        f"{path}/Zhongtong_Motor_User_Manual.pdf",
+        f"{path}/Kinglong_Air _Brake _System_Service_Manual.pdf",
+        f"{path}/Joylong_User_Manual.pdf",
+        # f"Higer_All_parts_User_Manual.pdf",
+        f"{path}/BLK-E9_Air_Suspension_Maintenance_Manual.pdf",
     ]
 
     all_manual_data = []
