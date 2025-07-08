@@ -43,7 +43,7 @@ class VehicleServiceHandler:
                 msg = results
             else:
                 msg = " Sorry, I couldn't find anything relevant for that issue."
-            return (msg)
+            return msg
 
         else:
             self.session["state"]["status"] = "awaiting_model"

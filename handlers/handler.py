@@ -8,7 +8,7 @@ from utils.pdf_bill_handler import process_pdf_bill
 
 class WhatsAppHandler:
     def __init__(
-            self, user_id: str, message: str, media_url: str = None, media_type: str = None
+        self, user_id: str, message: str, media_url: str = None, media_type: str = None
     ):
         self.user_id = user_id
         self.message = message.strip()
@@ -63,8 +63,11 @@ class WhatsAppHandler:
         else:
             handler = commands.get(str(action), self._unknown)
             results = handler(text)
-            result = [str(self.response.message(res)) for res in results
-                      ] if type(results) == list else (self.response.message(results))
+            result = (
+                [str(self.response.message(res)) for res in results]
+                if type(results) == list
+                else (self.response.message(results))
+            )
             logger.info(text, result)
         return result
 

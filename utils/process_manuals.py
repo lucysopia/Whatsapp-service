@@ -1,15 +1,18 @@
 # This script processes various bus manuals in PDF format, extracting text, cleaning it,
 # chunking it by headers, and generating embeddings for each chunk using a pre-trained model.
 import os
+
 # PyMuPDF
 import re
 import pymupdf
 
 import json
+
 # from sentence_transformers import SentenceTransformer
 
 # model = SentenceTransformer("all-MiniLM-L6-v2")
 model = None
+
 
 def clean_text(text):
     text = re.sub(r"\n+", "\n", text)
@@ -77,7 +80,7 @@ def save_to_json(data, filename="manual_chunks.json"):
 
 
 if __name__ == "__main__":
-    path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))+"/static"
+    path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..")) + "/static"
     pdf_paths = [
         f"{path}/BYD-K6_All_Systems_Service _Manual.pdf",
         f"{path}/Zhongtong_Motor_User_Manual.pdf",
