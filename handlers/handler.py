@@ -105,7 +105,8 @@ class WhatsAppHandler:
         return "❓ I didn’t understand that. Type 'help' to see what I can do."
 
     def _initiate_bill_processing(self, message) -> str:
-        if message == 1:
+        print(message,type(message))
+        if message == "1":
             self.session["state"]["action"] = 1
             self.session["state"]["status"] = "initiated"
             message = "Please upload a pdf bill to process and save the data"
