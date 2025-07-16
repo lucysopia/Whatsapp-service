@@ -3,7 +3,6 @@ from twilio.twiml.messaging_response import MessagingResponse
 from database.database import get_session, save_session
 from handlers.vehicle_service_handler import VehicleServiceHandler
 from settings import logger
-from utils.pdf_bill_handler import process_pdf_bill
 
 
 class WhatsAppHandler:
@@ -21,9 +20,7 @@ class WhatsAppHandler:
         self.session["history"].append(self.message)
         logger.info("session", self.session)
         action = self.session.get("state", {}).get("action")
-        if action == 1 and self.is_pdf():
-            result = await self.handle_pdf()
-        elif self.message:
+        if self.message:
             result = self.handle_text(action)
         else:
             result = self.handle_fallback(action)
@@ -33,23 +30,14 @@ class WhatsAppHandler:
     def is_pdf(self):
         return self.media_url and "pdf" in (self.media_type or "")
 
-    async def handle_pdf(self):
-        print("processing pdf file")
-        content = process_pdf_bill(self.media_url)
-        self.response.message(f"✅ Bill processed:\n\n{content}")
-        return self.response
-
     def handle_text(self, action: str) -> MessagingResponse:
         text = self.message.lower()
         commands = {
             "help": self._help,
-            "summary": self._summary,
             "hi": self._greet,
             "hello": self._greet,
-            "1": self._initiate_bill_processing,
-            "2": self._report_vehicle_issue,
-            "3": VehicleServiceHandler(self.session).search_vehicle_manual,
-            "4": self._help,
+            "1": VehicleServiceHandler(self.session).search_vehicle_manual,
+            "2": self._help,
         }
         logger.info("action handle text", action, type(action))
         logger.info("action handle text", text)
@@ -80,52 +68,19 @@ class WhatsAppHandler:
     def _help(message) -> str:
         return (
             "📖 *Help Menu:*\n"
-            "- Send a PDF bill to get extracted data\n"
-            "- Type 'help' to see this menu again"
+            "1️⃣ Search vehicle manual\n"
+            "Reply with the number of your choice (e.g. 1)."
         )
-
-    @staticmethod
-    def _summary(message) -> str:
-        # Placeholder — this could come from a DB later
-        return "🧾 Your last bill was Ksh 276,143.00 for July."
 
     @staticmethod
     def _greet(message) -> str:
         return (
             "👋 Hello! Please choose an option below:\n\n"
-            "1️⃣ Report latest electricity bill\n"
-            "2️⃣ Report a vehicle issue\n"
-            "3️⃣ Search vehicle manual\n"
-            "4️⃣ Help\n\n"
-            "Reply with the number of your choice (e.g. 1 or 3)."
+            "1️⃣ Search vehicle manual\n"
+            "2️⃣ Help\n\n"
+            "Reply with the number of your choice (e.g. 1)."
         )
 
     @staticmethod
     def _unknown(message) -> str:
         return "❓ I didn’t understand that. Type 'help' to see what I can do."
-
-    def _initiate_bill_processing(self, message) -> str:
-        print(message,type(message))
-        if message == "1":
-            self.session["state"]["action"] = 1
-            self.session["state"]["status"] = "initiated"
-            message = "Please upload a pdf bill to process and save the data"
-            return message
-        elif message == "0":
-            self.session["state"]["action"] = None
-            self.session["state"]["status"] = None
-            return (
-                "👋 Hello! Please choose an option below:\n\n"
-                "1️⃣ Report latest electricity bill\n"
-                "2️⃣ Report a vehicle issue\n"
-                "3️⃣ Search vehicle manual\n"
-                "4️⃣ Help\n\n"
-                "Reply with the number of your choice (e.g. 1 or 3)."
-            )
-        else:
-            return "I did not understand that. Please type 0 to see what actions I can perform."
-
-    def _report_vehicle_issue(self, message) -> str:
-        self.session["state"]["2"] = 2
-        self.session["state"]["status"] = None
-        return "Sorry this feature is not yet developed"
