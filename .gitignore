@@ -15,3 +15,7 @@ __pycache__/
 
 # Local testing files 
 manual_chunks.json
+
+test_manual_search.py
+
+static/*.pdf
