@@ -1,23 +1,4 @@
 
-
-# note no need to run this file if the indexes were added from colab to the vectorstore/ folder
-# That script is only needed when:
-
-# You add new manuals or update existing ones.
-
-# You want to rebuild the FAISS indexes from scratch.
-
-# Otherwise:
-
-# The FastAPI bot (main.py + rag_helper.py + router.py) will just load the existing indexes from vectorstore/.
-
-# Your workflow becomes lighter:
-
-# Build in Colab → export indexes.zip → add to vectorstore/.
-
-# Run locally with uvicorn main:app --reload.
-# remember to install faiss-cpu in your local environment if you haven't already.
-
 import os
 import pickle
 import faiss
