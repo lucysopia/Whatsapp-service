@@ -1,25 +1,18 @@
-from fastapi import APIRouter, Form
-from starlette.responses import Response
+from fastapi import APIRouter, Request
+from fastapi.responses import PlainTextResponse
+from handlers.handler import handle_message
 
-from handlers.handler import WhatsAppHandler
+router = APIRouter()
 
-twilio_router = APIRouter()
+@router.post("/whatsapp/incoming")
+async def whatsapp_webhook(request: Request):
+    """
+    Endpoint Twilio will call when a new WhatsApp message arrives.
+    """
+    form = await request.form()
+    incoming_msg = form.get("Body", "").strip()
+    sender = form.get("From", "")
 
+    response_text = await handle_message(incoming_msg, sender)
 
-@twilio_router.post("/whatsapp")
-async def whatsapp_router(
-    Body: str = Form(""),
-    MediaUrl0: str = Form(None),
-    MediaContentType0: str = Form(None),
-    From: str = Form(None),
-):
-    print(Body, From)
-    handler = WhatsAppHandler(
-        user_id=From, message=Body, media_url=MediaUrl0, media_type=MediaContentType0
-    )
-    # Get TwiML string from handler
-    twiml_response = await handler.handle()
-    print(type(twiml_response), "not xml")
-    print((twiml_response), "not xml")
-    # Ensure the response is a stringified XML (TwiML)
-    return Response(content=twiml_response.to_xml(), media_type="application/xml")
+    return PlainTextResponse(content=response_text)

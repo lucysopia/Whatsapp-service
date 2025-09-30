@@ -1,18 +1,18 @@
-from fastapi import FastAPI
 
-from routers.router import twilio_router
+
+from fastapi import FastAPI
+from routers.router import router
 
 
 app = FastAPI(
-    title="WhatsApp AI Bot",
-    description="Handles WhatsApp-based PDF bill processing and vehicle manual search",
-    version="1.0.0",
+    title="BasiGo WhatsApp Service Bot",
+    description="Helps engineers troubleshoot bus issues using RAG",
+    version="1.0.0"
 )
 
-# Include routers
-app.include_router(twilio_router)
-
+# Register routes
+app.include_router(router)
 
 @app.get("/")
-async def root():
-    return {"message": "WhatsApp AI Bot is running!"}
+def root():
+    return {"status": "BasiGo WhatsApp Service Bot is running!"}
