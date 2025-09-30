@@ -71,4 +71,3 @@ Bot:  Got it. You're working on Zhongtong.
 You: Battery overheating
 Bot: Here’s what I found in the Zhongtong manual:
      ...
-
