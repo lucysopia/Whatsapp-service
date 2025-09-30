@@ -1,0 +1,21 @@
+# virtual environments
+.venv/
+
+# macOS system file
+.DS_Store
+
+# environment variables
+.env
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+
+
+# Local testing files 
+manual_chunks.json
+
+test_manual_search.py
+
+static/*.pdf
