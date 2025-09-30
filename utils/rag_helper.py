@@ -1,38 +1,47 @@
 import os
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_openai import OpenAI, OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
-from langchain.prompts import PromptTemplate
-
-INDEX_DIR = os.getenv("INDEX_DIR", "vectorstore/")
+from settings import INDEX_DIR, OPENAI_API_KEY
 
 
-def load_vectorstore(model_name: str):
-    """Load FAISS index for a given bus model"""
-    model_index_path = os.path.join(INDEX_DIR, model_name)
-    if not os.path.exists(model_index_path):
-        raise ValueError(f"No FAISS index found for {model_name}")
-    return FAISS.load_local(model_index_path, OpenAIEmbeddings(model="text-embedding-3-small"), allow_dangerous_deserialization=True)
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 
-def query_manual(model_name: str, question: str) -> str:
-    """Query the FAISS index and get an answer from ChatGPT"""
-    db = load_vectorstore(model_name)
-    docs = db.similarity_search(question, k=4)
+def load_faiss_index(bus_model: str, index_dir: str = INDEX_DIR):
+    """
+    Load FAISS index for a specific bus model.
+    """
+    model_dir = os.path.join(index_dir, bus_model)
 
-    context = "\n\n".join([d.page_content for d in docs])
+    if not os.path.exists(model_dir):
+        raise FileNotFoundError(f"FAISS index not found for {bus_model} in {model_dir}")
 
-    prompt = PromptTemplate.from_template("""
-    You are a helpful assistant for bus engineers and technicians. 
-    Use the context below to answer the question in simple, clear steps. 
-    If you don’t know, say you don’t know.
+    embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
 
-    Context:
-    {context}
+    # Load directly with LangChain
+    vectorstore = FAISS.load_local(model_dir, embeddings, allow_dangerous_deserialization=True)
+    
+    return vectorstore
 
-    Question: {question}
-    Answer:
-    """)
+def query_rag(bus_model: str, query: str) -> str:
+    """
+    Query the FAISS index for the given bus model.
+    """
+    try:
+        vectorstore = load_faiss_index(bus_model)
+        docs = vectorstore.similarity_search(query, k=3)
 
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-    response = llm.predict(prompt.format(context=context, question=question))
-    return response
+        if not docs:
+            return "Sorry, I could not find relevant information."
+
+        context = "\n".join([doc.page_content for doc in docs])
+
+        llm = OpenAI(openai_api_key=OPENAI_API_KEY, temperature=0)
+        prompt = f"Answer the question based on the context below:\n\n{context}\n\nQuestion: {query}\nAnswer:"
+
+        return llm(prompt)
+
+    except FileNotFoundError as e:
+        return str(e)
+    except Exception as e:
+        return f"Error while querying RAG: {e}"

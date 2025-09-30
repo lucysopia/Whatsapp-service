@@ -1,61 +1,54 @@
+
+
+# note no need to run this file if the indexes were added from colab to the vectorstore/ folder
+# That script is only needed when:
+
+# You add new manuals or update existing ones.
+
+# You want to rebuild the FAISS indexes from scratch.
+
+# Otherwise:
+
+# The FastAPI bot (main.py + rag_helper.py + router.py) will just load the existing indexes from vectorstore/.
+
+# Your workflow becomes lighter:
+
+# Build in Colab → export indexes.zip → add to vectorstore/.
+
+# Run locally with uvicorn main:app --reload.
+# remember to install faiss-cpu in your local environment if you haven't already.
+
 import os
-import glob
-from dotenv import load_dotenv
+import pickle
+import faiss
+from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
-from langchain_community.vectorstores import FAISS
-from langchain_community.document_loaders import PyPDFLoader
+from langchain.vectorstores import FAISS
+from settings import PDF_DIR, INDEX_DIR, OPENAI_API_KEY
 
-load_dotenv()
-
-DATA_DIR = os.getenv("PDF_DIR", "manuals/")
-INDEX_DIR = os.getenv("INDEX_DIR", "indexes/")  # base folder for all model indexes
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 
-def split_documents(documents, chunk_size=800, chunk_overlap=100):
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        separators=["\n\n", "\n", ".", " "]
-    )
-    return splitter.split_documents(documents)
+def build_index():
+    loader = PyPDFDirectoryLoader(PDF_DIR)
+    documents = loader.load()
 
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    texts = text_splitter.split_documents(documents)
 
-def build_faiss_indexes():
-    os.makedirs(INDEX_DIR, exist_ok=True)
+    embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
 
-    pdf_files = glob.glob(os.path.join(DATA_DIR, "*.pdf"))
-    if not pdf_files:
-        print("[WARN] No PDFs found in 'manuals/'. Add PDFs and rerun.")
-        return
+    vectorstore = FAISS.from_documents(texts, embeddings)
 
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+    # Save FAISS index
+    faiss.write_index(vectorstore.index, os.path.join(INDEX_DIR, "index.faiss"))
 
-    for pdf_file in pdf_files:
-        print(f"[INFO] Loading {pdf_file} ...")
-        loader = PyPDFLoader(pdf_file)
+    with open(os.path.join(INDEX_DIR, "index.pkl"), "wb") as f:
+        pickle.dump(vectorstore, f)
 
-        # Extract model name from filename (before first "_")
-        model_name = os.path.splitext(os.path.basename(pdf_file))[0].split("_")[0]
-        model_index_path = os.path.join(INDEX_DIR, model_name)
-
-        pages = loader.load()
-        for p in pages:
-            p.metadata["model"] = model_name
-            p.metadata["source"] = os.path.basename(pdf_file)
-
-        print(f"[INFO] Splitting {len(pages)} pages for {model_name}...")
-        chunks = split_documents(pages)
-
-        print(f"[INFO] Creating embeddings for {len(chunks)} chunks ({model_name})...")
-        vectorstore = FAISS.from_documents(chunks, embeddings)
-
-        os.makedirs(model_index_path, exist_ok=True)
-        print(f"[INFO] Saving FAISS index for {model_name} → {model_index_path}")
-        vectorstore.save_local(model_index_path)
-
-    print("[SUCCESS] All indexes built and saved!")
-
+    print(" FAISS index built and saved successfully.")
 
 if __name__ == "__main__":
-    build_faiss_indexes()
+    os.makedirs(INDEX_DIR, exist_ok=True)
+    build_index()
